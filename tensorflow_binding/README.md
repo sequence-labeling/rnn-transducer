@@ -1,1 +1,1 @@
-tenorFlow binding for rnn-transducer
+tensorFlow binding for rnn-transducer
