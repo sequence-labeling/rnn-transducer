@@ -3,6 +3,48 @@
 #include <numeric>
 #include <transducer_helper.h>
 template<typename ProbT>
+class CpuTransducer
+{
+public:
+    CpuTransducer(int alphabet_size, int minibatch, void* workspace, int num_threads,
+           int blank_label) :
+            alphabet_size_(alphabet_size), minibatch_(minibatch),
+            num_threads_(num_threads), workspace_(workspace),
+            null_label_(null_label);
+    transducerStatus_t cost_and_grad(const ProbT* const predict_act, const ProbT* const trans_act,
+                              ProbT *predict_grads,ProbT *trans_grads,
+                              ProbT* costs,
+                              const int* const flat_labels,
+                              const int* const label_lengths,
+                              const int* const input_lengths);
+    transducerStatus_t score_forward(const ProbT* const predict_act, const ProbT* const trans_act,
+                              ProbT* costs,
+                              const int* const flat_labels,
+                              const int* const label_lengths,
+                              const int* const input_lengths);
+    private:
+    int alphabet_size_; // Number of characters plus null label
+    int minibatch_;
+    int num_threads_;
+    int null_label_;
+    void* workspace_;
+    void exp_matrix(Prob* predict_probs,Prob* trans_probs,const int* const input_lengths,const int* const label_lengths);
+    ProbT compute_alphas(const ProbT* probs, int repeats, int S, int T,
+                         const int* const e_inc,
+                         const int* const s_inc,
+                         const int* const labels,
+                         ProbT* alphas);
+     ProbT compute_betas_and_grad(ProbT* grad, const ProbT* const probs,
+                                 ProbT log_partition, int repeats,
+                                 int S, int T, const int* const e_inc,
+                                 const int* const s_inc,
+                                 const int* const labels,
+                                 ProbT* alphas,
+                                 ProbT* betas,
+                                 ProbT* output);
+
+}
+template<typename ProbT>
 void
 CpuTransducer<Prob>::exp_matrix(Prob* predict_probs,Prob* trans_probs,const int* const input_lengths,const int* const label_lengths)
 {
