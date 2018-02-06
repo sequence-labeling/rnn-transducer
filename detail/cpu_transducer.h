@@ -27,6 +27,7 @@ public:
     int minibatch_;
     int num_threads_;
     int null_label_;
+    unoredered_map<pair<int,pair<int,int>>,ProbT> probs_utk;
     void* workspace_;
     void exp_matrix(Prob* predict_probs,Prob* trans_probs,const int* const input_lengths,const int* const label_lengths);
     ProbT compute_alphas(const ProbT* probs, int repeats, int S, int T,
@@ -92,17 +93,50 @@ if (activations == nullptr ||
         )
         return TRANSDUCER_STATUS_INVALID_VALUE;
 }
-template<typename ProbT>
-ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* probs,int U,int T,ProbT* alphas)
-{
-for(int t=1;t<T;t++)
-{
-for(int u=0;u<U;u++)
-{
 
-}
-}
+//t,u   u*T+t
+//u: [0,U]
+//t: [0,T)
+
+template<typename ProbT>
+ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const predict_act,const ProbT* trans_act,int U,int * labels,int T,ProbT* alphas)
+{
+    std::fill(alphas, alphas + (U+1)*T, 0);
+    alphas[0]=1;
+    for(int t=0;t<T;t++)
+    {
+        for(int u=0;u<=U;u++)
+        {
+            if(t>0)
+                alpha[t][u] += alpha[t-1][u]*O(t-1,u);
+            if(u>0)
+                alpha[t][u] += alpha[t][u-1]*y(t,u-1);
+        }
+    }
+    return alpha[T][U]
 } 
+template<typename Prob>
+ProbT CpuTransduer<Prob>::compute_pr(const ProbT* const predict_act,const ProbT* trans_act,int k,int t,int u,int U,int *labels)
+{
+    ProbT sum=0,prob_null,prob_back,prob_forword;
+    for(int c=0;c<alphabet_size_;c++)
+    {   
+        ProbT tmp=trans_act[t*alphabet_size_+c]*predict_act[u*alphabet_size_+c];
+        if(c==null_label_)
+            prob_null=tmp;
+        else if(u+1<=U&&c==label[u+1])
+            prob_back=tmp;
+        else if(u-1>=0&&c==label[u-1]
+            prob_forword=tmp;
+        sum+=tmp;
+    }
+    if(u+1<=U)
+        probs_utk[make_pair(u,make_pair(t,label[u+1]))]=prob_back/sum;
+    if(u-1>=0)
+        probs_utk[macke_pair(u,make_pair(t,label[u-1]))]=prob_forword/sum;
+    probs_utk[make_pair(u,make_pair(t,prob_null))]=prob_null/sum;
+    return probs_utk[make_pair(u,make_pair(t,k))];
+}
 template<typename ProbT>
 transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predict_act, const ProbT* const trans_act,
                                          ProbT* costs,
