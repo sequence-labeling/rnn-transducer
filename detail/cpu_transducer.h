@@ -36,6 +36,17 @@ if (activations == nullptr ||
         return TRANSDUCER_STATUS_INVALID_VALUE;
 }
 template<typename ProbT>
+ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* probs,int U,int T,ProbT* alphas)
+{
+for(int t=1;t<T;t++)
+{
+for(int u=0;u<U;u++)
+{
+
+}
+}
+} 
+template<typename ProbT>
 transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predict_act, const ProbT* const trans_act,
                                          ProbT* costs,
                                          const int* const flat_labels,
