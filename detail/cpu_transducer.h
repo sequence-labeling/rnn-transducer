@@ -74,11 +74,6 @@ for
 }
 }
 template<typename ProbT>
-ProbT CpuTransducer<Prob>::compute_alphas()
-{
-//to do
-}
-template<typename ProbT>
 tansducer<ProbT>::cost_and_grad(
 const ProbT* const activations,
                              ProbT *grads,
