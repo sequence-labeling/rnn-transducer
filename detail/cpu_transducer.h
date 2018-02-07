@@ -98,7 +98,7 @@ CpuTransducer<Prob>::exp_matrix(const ProbT* const trans_act,const ProbT*  const
 }
 template<typename Prob>
 void
-CpuTransduer<Prob>::compute_pr(const ProbT* const trans_exp,const ProbT* predict_exp,ProbT* const probs_utk,int maxU,int maxT,const int * const input_lengths,const int * const label_lengths,int *labels)
+CpuTransduer<ProbT>::compute_pr(const ProbT* const trans_exp,const ProbT* predict_exp,ProbT* const probs_utk,int maxU,int maxT,const int * const input_lengths,const int * const label_lengths,int *labels)
 {
    ProbT sum=0,prob_null,prob_back,prob_forword;
    int null_index,forward_index,back_index,col_offset
