@@ -55,18 +55,18 @@ public:
 
 }
 template<typename ProbT>
-CpuTransducer<ProbT>::CpuTransducer_metadata::CpuTransducer_metadata(int L, int S, int T, int mb,
+CpuTransducer<ProbT>::CpuTransducer_metadata::CpuTransducer_metadata(int U, int T, int mb,
                                                 int alphabet_size,
                                                 void* workspace, size_t bytes_used,
-                                                int blank_label,
+                                                int null_label,
                                                 const int* const labels) {
 
     alphas = reinterpret_cast<ProbT *>(static_cast<char *>(workspace) + bytes_used);
-    bytes_used += sizeof(ProbT) * S * T;
-    std::fill(alphas, alphas + S * T, ctc_helper::neg_inf<ProbT>());
+    bytes_used += sizeof(ProbT) * U * T;
+    std::fill(alphas, alphas + U* T,1);
     betas = reinterpret_cast<ProbT *>(static_cast<char *>(workspace) + bytes_used);
-    bytes_used += sizeof(ProbT) * S;
-    std::fill(betas, betas + S, ctc_helper::neg_inf<ProbT>());
+    bytes_used += sizeof(ProbT) *U;
+    std::fill(betas, betas + S, 1);
     labels_w_blanks = reinterpret_cast<int *>(static_cast<char *>(workspace) + bytes_used);
     bytes_used += sizeof(int) * S;
     e_inc = reinterpret_cast<int *>(static_cast<char *>(workspace) + bytes_used);
@@ -78,7 +78,7 @@ CpuTransducer<ProbT>::CpuTransducer_metadata::CpuTransducer_metadata(int L, int 
 
     repeats = setup_labels(labels, blank_label, L, S);
 }
-CpuTransducer<Prob>::exp_matrix(Prob* predict_probs,Prob* trans_probs,const int* const input_lengths,const int* const label_lengths)
+CpuTransducer<Prob>::exp_matrix(const ProbT* const trans_act,const ProbT*  const predict_probs,ProbT* trans_exp,ProbT* predict_exp,const int* const input_lengths,const int* const label_lengths)
 {
  for (int mb = 0; mb < minibatch_; ++mb) {
       for(int c=0;c<input_lenths[mb];++c)
@@ -86,10 +86,10 @@ CpuTransducer<Prob>::exp_matrix(Prob* predict_probs,Prob* trans_probs,const int*
             for(int r = 0; r < alphabet_size_; ++r)
              {
                 int col_offset = (mb + minibatch_ * c) * alphabet_size_;
-                trans_probs[r + col_offset] = std::exp(trans_probs[r+col_offset]);
+                trans_exp[r + col_offset] = std::exp(trans_act[r+col_offset]);
                 if(c<label_lengths[mb])
                 {
-                predict_probs[r + col_offset] = std::exp(predict_probs[r+col_offset]);
+                predict_exp[r + col_offset] = std::exp(predict_act[r+col_offset]);
                 }
               }
           }
@@ -189,7 +189,13 @@ transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predic
         input_lengths == nullptr
         )
         return TRANSDUCER_STATUS_INVALID_VALUE;
-        exp_matrix(predict_probs,trans_probs,input_lengths,label_lengths);
+     ProbT* trans_exp=static_cast<ProbT *>(workspace_);
+     int maxT =*std::max_element(input_lengths,input_lengths+minibatch_);
+     int maxU=*std::max_element(label_lengths,label_lengths+minibatch_);
+     int trans_used= minibatch_ * alphabet_size_ * maxT;
+     size_t bytes_used=trans_used*sizeof(ProbT);
+     ProbT* predict_exp=trans_exp+trans_used;
+    exp_matrix(trans_act,predict_act,trans_exp,predict_exp,input_lengths,label_lengths);
     for (int mb = 0; mb < minibatch_; ++mb) {
         const int T = input_lengths[mb]; // Length of utterance (time)
         const int U = label_lengths[mb]; // Number of labels in transcription
