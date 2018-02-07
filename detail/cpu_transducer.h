@@ -96,6 +96,28 @@ CpuTransducer<Prob>::exp_matrix(const ProbT* const trans_act,const ProbT*  const
 
 }
 }
+template<typename Prob>
+void
+ CpuTransduer<Prob>::compute_pr(const ProbT* const trans_exp,const ProbT* predict_exp,int maxU,int maxT,const int * const input_lengths,const int * const label_lengths,int *labels)
+ {
+     ProbT sum=0,prob_null,prob_back,prob_forword;
+     probs_utk.clear();
+     for(int c=0;c<alphabet_size_;c++)
+     {
+         ProbT tmp=trans_act[t*alphabet_size_+c]*predict_act[u*alphabet_size_+c];
+         if(c==null_label_)
+             prob_null=tmp;
+         else if(u+1<=U&&c==label[u+1])
+             prob_back=tmp;
+         else if(u-1>=0&&c==label[u-1]
+             prob_forword=tmp;
+         sum+=tmp;
+     }
+     if(u+1<=U)
+         probs_utk[make_pair(u,make_pair(t,label[u+1]))]=prob_back/sum;
+     if(u-1>=0)
+         probs_utk[macke_pair(u,make_pair(t,label[u-1]))]=prob_forword/sum;
+ }
 template<typename ProbT>
 tansducer<ProbT>::cost_and_grad(
 const ProbT* const activations,
@@ -193,14 +215,17 @@ transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predic
      int maxT =*std::max_element(input_lengths,input_lengths+minibatch_);
      int maxU=*std::max_element(label_lengths,label_lengths+minibatch_);
      int trans_used= minibatch_ * alphabet_size_ * maxT;
-     size_t bytes_used=trans_used*sizeof(ProbT);
      ProbT* predict_exp=trans_exp+trans_used;
+     int predict_used=minibatch_ * alphabet_size_ * maxU;
+     ProbT* probs_ut=predict_exp+predict_used;
+     int probs_used=minibatch_*maxT*maxU*3;
+     size_t bytes_used+=(trans_used+predict_used+probs_used)*sizeof(ProbT);
+
     exp_matrix(trans_act,predict_act,trans_exp,predict_exp,input_lengths,label_lengths);
+    compute_pr(trans_exp,predict_exp,input_lengths,label_lengths,maxT,maxU,flat_labels);
     for (int mb = 0; mb < minibatch_; ++mb) {
         const int T = input_lengths[mb]; // Length of utterance (time)
         const int U = label_lengths[mb]; // Number of labels in transcription
-
-       compute_pr(predict_act,trans_act,T,U,int *labels)
 
          costs[mb] = -compute_alphas(probs + mb * alphabet_size_, ctcm.repeats, S, T,
                                         ctcm.e_inc, ctcm.s_inc, ctcm.labels_w_blanks,
