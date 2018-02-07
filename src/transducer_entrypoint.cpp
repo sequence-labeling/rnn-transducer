@@ -25,6 +25,25 @@ transducerStatus_t get_workspace_size(const int* const label_lengths,
                                ctcOptions options,
                                size_t* size_bytes)
 {
-
+  if (label_lengths == nullptr ||
+        input_lengths == nullptr ||
+        size_bytes == nullptr ||
+        alphabet_size <= 0 ||
+        minibatch <= 0)
+        return TRANSDUCER_STATUS_INVALID_VALUE;
+  int maxU=*std::max_element(label_lengths,label_lengths+minibatch);
+  int maxT=*std::max_element(input_lengths,input_lengths+minibatch);
+  if(options.loc==TRANSDUCER_CPU)
+  {
+      size_t per_minibatch_bytes=0;
+      per_mini_batch_bytes+=sizeof(float)*alphabet_size;
+      //the space for alphas
+      per_minibatch_bytes+=sizeof(float)*maxU*maxT;
+      //the space for betas
+      per_minibatch_bytes+=sizeof(float)*maxU;
+      //the space for probs
+      per_minibatch_bytes+=sizeof(float)*alphabet_size * (maxT+maxU)
+  }
+  return TRANSDUCER_STATUS_SUCCESS;
 //to do
 }

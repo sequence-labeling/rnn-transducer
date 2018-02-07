@@ -98,26 +98,37 @@ CpuTransducer<Prob>::exp_matrix(const ProbT* const trans_act,const ProbT*  const
 }
 template<typename Prob>
 void
- CpuTransduer<Prob>::compute_pr(const ProbT* const trans_exp,const ProbT* predict_exp,int maxU,int maxT,const int * const input_lengths,const int * const label_lengths,int *labels)
- {
-     ProbT sum=0,prob_null,prob_back,prob_forword;
-     probs_utk.clear();
-     for(int c=0;c<alphabet_size_;c++)
+CpuTransduer<Prob>::compute_pr(const ProbT* const trans_exp,const ProbT* predict_exp,ProbT* const probs_utk,int maxU,int maxT,const int * const input_lengths,const int * const label_lengths,int *labels)
+{
+   ProbT sum=0,prob_null,prob_back,prob_forword;
+   int null_index,forward_index,back_index,col_offset
+   for(int mb=0;mb<minibatch_;++mb)
+   {
+     for(int t=0;t<input_lengths[mb];++t)
      {
-         ProbT tmp=trans_act[t*alphabet_size_+c]*predict_act[u*alphabet_size_+c];
-         if(c==null_label_)
+       int trans_col_offset=(mb+minibatch_*t)*alphabet_size_;
+       for(int u=0;u<label_lengths[mb];++u)
+       {
+         int predict_col_offset=(mb+minibatch_*u)*alphabet_size;
+         sum=0;
+         for(int r=0;r<alphabet_size_;c++)
+         {
+           ProbT tmp=trans_act[trans_col_offset+r]*predict_act[predict_col_offset+r];
+           if(c==null_label_)
              prob_null=tmp;
-         else if(u+1<=U&&c==label[u+1])
+           else if(u+1<=U&&c==labels[mb][u+1])
              prob_back=tmp;
-         else if(u-1>=0&&c==label[u-1]
+           else if(u-1>=0&&c==labels[mb][u-1]
              prob_forword=tmp;
          sum+=tmp;
+         }
+         probs_utk[null_index]=prob_null/sum;
+         probs_utk[forward_index]=prob_forward/sum;
+         probs_utk[back_index]=prob_back/sum;
+       }
      }
-     if(u+1<=U)
-         probs_utk[make_pair(u,make_pair(t,label[u+1]))]=prob_back/sum;
-     if(u-1>=0)
-         probs_utk[macke_pair(u,make_pair(t,label[u-1]))]=prob_forword/sum;
- }
+   }
+}
 template<typename ProbT>
 tansducer<ProbT>::cost_and_grad(
 const ProbT* const activations,
@@ -143,7 +154,7 @@ if (activations == nullptr ||
 //t: [0,T)
 //must invoke compute_pr before invoke this function
 template<typename ProbT>
-ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const predict_act,const ProbT* trans_act,int U,int * labels,int T,ProbT* alphas)
+ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const trans_exp,const ProbT* predict,int U,int * labels,int T)
 {
     std::fill(alphas, alphas + (U+1)*T, 0);
     alphas[0]=1;
@@ -159,28 +170,6 @@ ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const predict_act,const P
     }
     return alpha[T][U]
 } 
-template<typename Prob>
-void
-CpuTransduer<Prob>::compute_pr(const ProbT* const predict_act,const ProbT* trans_act,int k,int t,int u,int U,int *labels)
-{
-    ProbT sum=0,prob_null,prob_back,prob_forword;
-    probs_utk.clear();
-    for(int c=0;c<alphabet_size_;c++)
-    {   
-        ProbT tmp=trans_act[t*alphabet_size_+c]*predict_act[u*alphabet_size_+c];
-        if(c==null_label_)
-            prob_null=tmp;
-        else if(u+1<=U&&c==label[u+1])
-            prob_back=tmp;
-        else if(u-1>=0&&c==label[u-1]
-            prob_forword=tmp;
-        sum+=tmp;
-    }
-    if(u+1<=U)
-        probs_utk[make_pair(u,make_pair(t,label[u+1]))]=prob_back/sum;
-    if(u-1>=0)
-        probs_utk[macke_pair(u,make_pair(t,label[u-1]))]=prob_forword/sum;
-}
 template<typename ProbT>
 ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* grad, const ProbT* const probs,
                                             ProbT log_partition, int repeats,
@@ -226,10 +215,10 @@ transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predic
     for (int mb = 0; mb < minibatch_; ++mb) {
         const int T = input_lengths[mb]; // Length of utterance (time)
         const int U = label_lengths[mb]; // Number of labels in transcription
-
-         costs[mb] = -compute_alphas(probs + mb * alphabet_size_, ctcm.repeats, S, T,
-                                        ctcm.e_inc, ctcm.s_inc, ctcm.labels_w_blanks,
-                                        ctcm.alphas);
+        Cputransducer_metadata transducerm(L, S, T, mb, alphabet_size_, workspace_,
+                             bytes_used + mb * per_minibatch_bytes, blank_label_,
+                             flat_labels + std::accumulate(label_lengths, label_lengths + mb, 0));
+         costs[mb] = -compute_alphas(probs_ut + mb * alphabet_size_,transducerm.alphas);
         }
 
     }
