@@ -23,6 +23,15 @@ public:
                               const int* const label_lengths,
                               const int* const input_lengths);
     private:
+    class CpuTransducer_metadata
+    {
+     public  CpuCTC_metadata(int U, int T, int mb, int alphabet_size,
+                        void* workspace, size_t bytes_used, int blank_label,
+                        const int* const labels);
+     ProbT* alphas;
+     ProbT* betas;
+     ProbT* output;
+    }
     int alphabet_size_; // Number of characters plus null label
     int minibatch_;
     int num_threads_;
@@ -46,7 +55,29 @@ public:
 
 }
 template<typename ProbT>
-void
+CpuTransducer<ProbT>::CpuTransducer_metadata::CpuTransducer_metadata(int L, int S, int T, int mb,
+                                                int alphabet_size,
+                                                void* workspace, size_t bytes_used,
+                                                int blank_label,
+                                                const int* const labels) {
+
+    alphas = reinterpret_cast<ProbT *>(static_cast<char *>(workspace) + bytes_used);
+    bytes_used += sizeof(ProbT) * S * T;
+    std::fill(alphas, alphas + S * T, ctc_helper::neg_inf<ProbT>());
+    betas = reinterpret_cast<ProbT *>(static_cast<char *>(workspace) + bytes_used);
+    bytes_used += sizeof(ProbT) * S;
+    std::fill(betas, betas + S, ctc_helper::neg_inf<ProbT>());
+    labels_w_blanks = reinterpret_cast<int *>(static_cast<char *>(workspace) + bytes_used);
+    bytes_used += sizeof(int) * S;
+    e_inc = reinterpret_cast<int *>(static_cast<char *>(workspace) + bytes_used);
+    bytes_used += sizeof(int) * S;
+    s_inc = reinterpret_cast<int *>(static_cast<char *>(workspace) + bytes_used);
+    bytes_used += sizeof(int) * S;
+    output = reinterpret_cast<ProbT *>(static_cast<char *>(workspace) + bytes_used);
+    bytes_used += sizeof(ProbT) * alphabet_size;
+
+    repeats = setup_labels(labels, blank_label, L, S);
+}
 CpuTransducer<Prob>::exp_matrix(Prob* predict_probs,Prob* trans_probs,const int* const input_lengths,const int* const label_lengths)
 {
  for (int mb = 0; mb < minibatch_; ++mb) {
@@ -165,10 +196,7 @@ transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predic
 
        compute_pr(predict_act,trans_act,T,U,int *labels)
 
-        if (L + ctcm.repeats > T)
-            costs[mb] = ProbT(0);
-        else {
-            costs[mb] = -compute_alphas(probs + mb * alphabet_size_, ctcm.repeats, S, T,
+         costs[mb] = -compute_alphas(probs + mb * alphabet_size_, ctcm.repeats, S, T,
                                         ctcm.e_inc, ctcm.s_inc, ctcm.labels_w_blanks,
                                         ctcm.alphas);
         }
