@@ -168,22 +168,56 @@ ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const probs_ut,int max_U,
     return alpha[T][U]
 } 
 template<typename ProbT>
-ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* grad, const ProbT* const probs,
+ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grad,ProbT* predict_grad, const ProbT* const probs_ut,
                                             ProbT log_partition, int repeats,
-                                            int S, int T, const int* const e_inc,
+                                            int U, int T, const int* const e_inc,
                                             const int* const s_inc,
                                             const int* const labels,
                                             ProbT* alphas,
                                             ProbT* betas,
                                             ProbT* output) {
+    pr_yx=
+    for(int k=0;k<alphabet_size_;k++)
+    {
+    
     for(int t=0;t<T;t++)
+     {
+         for(int u=0;u<=U;u++)
+         {
+          grad_utk=-alphas[u][t]/pr_yx
+         }
+     }
+    }
+    for(int t=0,t<T;t++)
+    {
+    for(int k=0,k<alphabet_size_,k++)
     {
     for(int u=0;u<U;u++)
     {
-    
+         for(int k_tmp=0;k_tmp<alphabet_size;k_tmp++)
+         {
+             trans_grad[k][t]+=grad_utk[u][t][k_tmp]*porbs_utk[u][t][k_tmp]*(//totp);
+         }
+
     }
+    trans_grad[k][t]=
     }
 
+    }
+    for(int u=0;u<U;u++)
+    {
+    for(int k=0;k<alphabeet_size_,k++)
+    {
+    for(int t=0;t<T;t++)
+    {
+      for(int k_tmp=0;k_tmp<alphabet_size;k_tmp++)
+      {
+         predit_grad[k][u]+=grad_utk[u][t][k_tmp]*porbs_utk[u][t][k_tmp]*(//totp);
+      }
+    }
+    }
+    }
+   return pr_yx;
 }
 CpuCTC<ProbT>::cost_and_grad_kernel(ProbT *grad, const ProbT* const probs,
                                     const int* const labels,
