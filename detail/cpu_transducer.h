@@ -109,22 +109,17 @@ CpuTransduer<ProbT>::compute_pr(const ProbT* const trans_exp,const ProbT* predic
        int trans_col_offset=(mb+minibatch_*t)*alphabet_size_;
        for(int u=0;u<label_lengths[mb];++u)
        {
+         null_index=(mb+minibatch*t)*(maxU*alphabet_size)+u;
+         forward_index=null_index+max_U;
+         backward_index=forward_index+max_U;
+         int null_index(mb+mi)
          int predict_col_offset=(mb+minibatch_*u)*alphabet_size;
          sum=0;
          for(int r=0;r<alphabet_size_;c++)
          {
            ProbT tmp=trans_act[trans_col_offset+r]*predict_act[predict_col_offset+r];
-           if(c==null_label_)
-             prob_null=tmp;
-           else if(u+1<=U&&c==labels[mb][u+1])
-             prob_back=tmp;
-           else if(u-1>=0&&c==labels[mb][u-1]
-             prob_forword=tmp;
-         sum+=tmp;
+           probs_utk[null_index+r*alphabet_size]=tmp/sum;
          }
-         probs_utk[null_index]=prob_null/sum;
-         probs_utk[forward_index]=prob_forward/sum;
-         probs_utk[back_index]=prob_back/sum;
        }
      }
    }
@@ -154,7 +149,7 @@ if (activations == nullptr ||
 //t: [0,T)
 //must invoke compute_pr before invoke this function
 template<typename ProbT>
-ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const trans_exp,const ProbT* predict,int U,int * labels,int T)
+ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const probs_ut,int max_U,int U,int * labels,int T)
 {
     std::fill(alphas, alphas + (U+1)*T, 0);
     alphas[0]=1;
@@ -162,10 +157,12 @@ ProbT CpuTransducer<Prob>::compute_alphas(const ProbT* const trans_exp,const Pro
     {
         for(int u=0;u<=U;u++)
         {
+            ut_null_index=(mb+minibatch*(t-1))*(maxU*3)+u;
+            ut_forward_index=(mb+minibatch*(t-1))*(maxU*3)+u;
             if(t>0)
-                alpha[t][u] += alpha[t-1][u]*O(t-1,u);
+                alpha[t][u] += alpha[t-1][u]*probs_ut[ut_null_index];
             if(u>0)
-                alpha[t][u] += alpha[t][u-1]*y(t,u-1);
+                alpha[t][u] += alpha[t][u-1]*probs_ut[ut_forward_index];
         }
     }
     return alpha[T][U]
@@ -179,6 +176,13 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* grad, const ProbT* con
                                             ProbT* alphas,
                                             ProbT* betas,
                                             ProbT* output) {
+    for(int t=0;t<T;t++)
+    {
+    for(int u=0;u<U;u++)
+    {
+    
+    }
+    }
 
 }
 CpuCTC<ProbT>::cost_and_grad_kernel(ProbT *grad, const ProbT* const probs,
@@ -207,12 +211,12 @@ transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predic
      ProbT* predict_exp=trans_exp+trans_used;
      int predict_used=minibatch_ * alphabet_size_ * maxU;
      ProbT* probs_ut=predict_exp+predict_used;
-     int probs_used=minibatch_*maxT*maxU*3;
+     int probs_used=minibatch_*maxT*maxU*alphabet_size;
      size_t bytes_used+=(trans_used+predict_used+probs_used)*sizeof(ProbT);
 
-    exp_matrix(trans_act,predict_act,trans_exp,predict_exp,input_lengths,label_lengths);
-    compute_pr(trans_exp,predict_exp,input_lengths,label_lengths,maxT,maxU,flat_labels);
-    for (int mb = 0; mb < minibatch_; ++mb) {
+     exp_matrix(trans_act,predict_act,trans_exp,predict_exp,input_lengths,label_lengths);
+     compute_pr(trans_exp,predict_exp,input_lengths,label_lengths,maxT,maxU,flat_labels);
+     for (int mb = 0; mb < minibatch_; ++mb) {
         const int T = input_lengths[mb]; // Length of utterance (time)
         const int U = label_lengths[mb]; // Number of labels in transcription
         Cputransducer_metadata transducerm(L, S, T, mb, alphabet_size_, workspace_,
