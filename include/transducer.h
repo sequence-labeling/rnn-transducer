@@ -23,7 +23,7 @@ TRANSDUCER_GPU=1
  transducerStatus_t loc;
  union
  {
- unsigned int num_thread;
+ unsigned int num_threads;
  CUstream stream;
  };
  int null_label;

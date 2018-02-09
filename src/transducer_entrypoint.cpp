@@ -1,7 +1,10 @@
 #include<transducer.h>
-transducerStatus_t compute_ctc_loss(const float* const predict_probs,const float * const trans_probs,const int * const flat_labels,const int * const label_lengths,const int * const input lengths,int alphabet_size,int minibatch,float *costs,void *wordspace,transducerOptions options)
+#include <detail/cpu_transducer.h>
+#include<iostream>
+#include<cstddef>
+transducerStatus_t compute_transducer_loss(const float* const predict_acts,const float * const trans_acts,float * trans_grads,float * predict_grads, const int const *flat_labels,const int * const label_lengths,const int * const input_lengths,int alphabet_size,int minibatch,float *costs,void *workspace,transducerOptions options)
 {
-    if (trans_probs==nullptr||predict_probs == nullptr ||
+    if (trans_acts==nullptr||predict_acts == nullptr ||
         flat_labels == nullptr ||
         label_lengths == nullptr ||
         input_lengths == nullptr ||
@@ -9,20 +12,20 @@ transducerStatus_t compute_ctc_loss(const float* const predict_probs,const float
         workspace == nullptr ||
         alphabet_size <= 0 ||
         minibatch <= 0)
-        return CTC_STATUS_INVALID_VALUE;
+        return TRANSDUCER_STATUS_INVALID_VALUE;
     if(options.loc==TRANSDUCER_CPU)
     {
       CpuTransducer<float> transducer(alphabet_size, minibatch, workspace, options.num_threads,options.null_label);
-      if(gradients!=NULL)
+      /*if(trans_grads!=NULL&&predict_grads!=NULL)
           return transducer.cost_and_grad();
-      else
-          return transducer.score_forward();
+      else*/
+          return transducer.score_forward(predict_acts,trans_acts,costs,flat_labels,label_lengths,input_lengths);
     }
 }
 transducerStatus_t get_workspace_size(const int* const label_lengths,
                                const int* const input_lengths,
                                int alphabet_size, int minibatch,
-                               ctcOptions options,
+                               transducerOptions options,
                                size_t* size_bytes)
 {
   if (label_lengths == nullptr ||
@@ -36,13 +39,15 @@ transducerStatus_t get_workspace_size(const int* const label_lengths,
   if(options.loc==TRANSDUCER_CPU)
   {
       size_t per_minibatch_bytes=0;
-      per_mini_batch_bytes+=sizeof(float)*alphabet_size;
+      per_minibatch_bytes+=sizeof(float)*alphabet_size;
       //the space for alphas
       per_minibatch_bytes+=sizeof(float)*maxU*maxT;
       //the space for betas
       per_minibatch_bytes+=sizeof(float)*maxU;
       //the space for probs
-      per_minibatch_bytes+=sizeof(float)*alphabet_size * (maxT+maxU)
+      per_minibatch_bytes+=sizeof(float)*alphabet_size * (maxT+maxU);
+      per_minibatch_bytes+=sizeof(float)*alphabet_size*maxT*maxU;
+      *size_bytes=per_minibatch_bytes*minibatch;
   }
   return TRANSDUCER_STATUS_SUCCESS;
 //to do

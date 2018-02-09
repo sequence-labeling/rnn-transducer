@@ -8,15 +8,15 @@ ENDIF()
 project(transducer_release)
 
 
-if (NOT APPLE)
+IF (NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2")
 ENDIF()
 
 include_directories(include)
 
-option(WITH_OMP "compile transducer with openmp. " ON)
+option(WITH_OMP "compile transducer with openmp. " OFF)
 
-if(NOT WITH_OMP)
+IF(NOT WITH_OMP)
     add_definitions(-DTRANSDUCER_DISABLE_OMP)
 endif()
 IF (APPLE)
@@ -36,12 +36,12 @@ ELSE()
 ENDIF()
 
 MESSAGE(STATUS "building shared library with CPU")
-ADD_LIBRARY(transducer SHARED src /transducer_entrypoint.cpp)
+ADD_LIBRARY(transducer SHARED src/transducer_entrypoint.cpp)
 #add_executable(test_cpu tests/tenst_cpu.cpp)
 #TARGET_LINK_LIBRARIES(test_cpu transducer)
 #SET_TARGET_PROPERTIES(test_cpu PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
 
-INSTALL(TARGET transducer
+INSTALL(TARGETS transducer transducer
         RUNTIME DESTINATION "bin"
         LIBRARY DESTINATION "lib"
         ARCHIVE DESTINATION "lib"
