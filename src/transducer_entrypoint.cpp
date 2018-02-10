@@ -2,6 +2,27 @@
 #include <detail/cpu_transducer.h>
 #include<iostream>
 #include<cstddef>
+int get_transducer_version() {
+    return 1;
+}
+const char* transducerGetStatusString(transducerStatus_t status) {
+    switch (status) {
+    case TRANSDUCER_STATUS_SUCCESS:
+        return "no error";
+    case TRANSDUCER_STATUS_MEMOPS_FAILED:
+        return "cuda memcpy or memset failed";
+    case TRANSDUCER_STATUS_INVALID_VALUE:
+        return "invalid value";
+    case TRANSDUCER_STATUS_EXECUTION_FAILED:
+        return "execution failed";
+
+    case TRANSDUCER_STATUS_UNKNOWN_ERROR:
+    default:
+        return "unknown error";
+
+    }
+
+}
 transducerStatus_t compute_transducer_loss(const float* const predict_acts,const float * const trans_acts,float * trans_grads,float * predict_grads, const int const *flat_labels,const int * const label_lengths,const int * const input_lengths,int alphabet_size,int minibatch,float *costs,void *workspace,transducerOptions options)
 {
     if (trans_acts==nullptr||predict_acts == nullptr ||

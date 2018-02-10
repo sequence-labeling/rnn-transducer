@@ -17,10 +17,10 @@ typedef enum
 {
 TRANSDUCER_CPU=0,
 TRANSDUCER_GPU=1
-} tansducerComputeLocation;
+} transducerComputeLocation;
  struct transducerOptions
  {
- transducerStatus_t loc;
+ transducerComputeLocation loc;
  union
  {
  unsigned int num_threads;
@@ -29,8 +29,9 @@ TRANSDUCER_GPU=1
  int null_label;
  
  };
+const char* transducerGetStatusString(transducerStatus_t status);
 int get_transducer_version();
-transducerStatus_t compute_transducer_loss(const float * const predict_act,float * gradients,const int * const flat_labels,const int * const label_lengths,const int * const input_lengths,int alphabet_size,int minibatch, float * costs, transducerOptions options);
+transducerStatus_t compute_transducer_loss(const float * const trans_act,const float * const predict_act,float * trans_grad,float * predict_grad,const int * const flat_labels,const int * const label_lengths,const int * const input_lengths,int alphabet_size,int minibatch, float * costs, void * workspace ,transducerOptions options);
 transducerStatus_t get_workspace_size(const int* const label_lengths,
                                const int* const input_lengths,
                                int alphabet_size, int minibatch,
