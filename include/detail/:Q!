@@ -201,76 +201,56 @@ ProbT CpuTransducer<ProbT>::compute_alphas(const ProbT* const probs_tuk,ProbT * 
     ProbT loglike=alphas[(T-1)*U+(U-1)]*probs_tuk[tuk_null_index];
     return loglike;
 } 
-template<typename ProbT>
-ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* predict_grads, const ProbT* const probs_tuk,const ProbT* const grads_tuk,int U, int T,const int* const label,ProbT* alphas) {
-// maxT*maxU*mini_batch_*alphabet_size_
-    std::fill(trans_grads, trans_grads + T*alphabet_size_, 0);
-    std::fill(predict_grads, predict_grads + U*alphabet_size_, 0);
-    int tuk_null_index=(T-1)*maxU*minibatch_*alphabet_size_+(U-1)*minibatch_*alphabet_size_+null_label_;
-    ProbT pr_yx=alphas[(T-1)*U+(U-1)]*probs_tuk[tuk_null_index];
-    ProbT bata_tu,beta_tu_,beta_t_u;
-    for(int t=T-1;t>=0;t--)
-     {
-         int alphas_index=t*U;
-         beta_t_u=beta_tu;
-         for(int u=U-1;u>=0;u--)
-         {
-             beta_tu_=beta_tu;
-             if(T<T-1)
-                 beta_tu+=beta_t_u;
-             if(U<U-1)
-                 beta_tu+=beta_tu_;
 
-             int grads_tuk_index=(u+t*U)*alphabet_size_;
-             for(int k=0;k<alphabet_size_;k++)
-              {  
-                  if(k==null_label_index)
-                  {
-                      grads_tuk[grads_tuk_index+k]=-(alphas[alphas_index]/pr_yx)*beta_t_u;
-                  }
-                  else if(k=label[u])
-                  { 
-                      grads_tuk[grads_tuk_index+k]=-(alphas[alphas_index]/pr_yx)*beta_tu_;
-                 
-                  }
-                  else
-                  {
-                      grads_tuk[grads_tuk_index+k]=0;
-                  }
-             }
-       }
+template<typename ProbT>
+ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grad,ProbT* predict_grad, const ProbT* const probs_ut,
+                                            ProbT log_partition, int repeats,
+                                            int U, int T, const int* const e_inc,
+                                            const int* const s_inc,
+                                            const int* const labels,
+                                            ProbT* alphas,
+                                            ProbT* betas,
+                                            ProbT* output) {
+    pr_yx=
+    for(int k=0;k<alphabet_size_;k++)
+    {
+    
+    for(int t=0;t<T;t++)
+     {
+         for(int u=0;u<=U;u++)
+         {
+          grad_utk=-alphas[u][t]/pr_yx
+         }
+     }
     }
     for(int t=0,t<T;t++)
     {
-      int trans_grads_index=t*alphabet_size_;
-      for(int k=0,k<alphabet_size_,k++)
-      { 
-        for(int u=0;u<U;u++)
-        {
-         int tuk_index=(u+t*U)*alphabet_size_;
-
+    for(int k=0,k<alphabet_size_,k++)
+    {
+    for(int u=0;u<U;u++)
+    {
          for(int k_tmp=0;k_tmp<alphabet_size;k_tmp++)
          {
-             trans_grads[trans_grads_index+k]+=grads_tuk[tuk_index+k_tmp]*porbs_tuk[tuk_index+k_tmp]*(1-porbs_tuk[tuk_index+k]);
+             trans_grad[k][t]+=grad_utk[u][t][k_tmp]*porbs_utk[u][t][k_tmp]*(//totp);
          }
 
-        }
-       }
+    }
+    trans_grad[k][t]=
+    }
+
     }
     for(int u=0;u<U;u++)
     {
-      int predict_grads_index=t*alphabet_size_;
-      for(int k=0;k<alphabeet_size_,k++)
+    for(int k=0;k<alphabeet_size_,k++)
+    {
+    for(int t=0;t<T;t++)
+    {
+      for(int k_tmp=0;k_tmp<alphabet_size;k_tmp++)
       {
-       for(int t=0;t<T;t++)
-       {
-         int tuk_index=(u+t*U)*alphabet_size_;
-         for(int k_tmp=0;k_tmp<alphabet_size;k_tmp++)
-         {
-          predict_grads[redict_grads_index+k]+=grads_tuk[tuk_index+k_tmp]*porbs_tuk[tuk_index+k_tmp]*(1-porbs_tuk[tuk_index+k]);
-         }
-       }
+         predit_grad[k][u]+=grad_utk[u][t][k_tmp]*porbs_utk[u][t][k_tmp]*(//totp);
       }
+    }
+    }
     }
    return pr_yx;
 }
