@@ -1,6 +1,7 @@
 #include <tuple>
 #include <limits>
 #include <numeric>
+#include <iostream>
 #if !defined(TRANSDUCER_DISABLE_OMP)&&!defined(APPLE)
 #include<omp.h>
 #endif
@@ -100,13 +101,17 @@ CpuTransducer<ProbT>::exp_matrix(const ProbT* const trans_acts,const ProbT*  con
              {
                 int col_offset = (mb + minibatch_ * c) * alphabet_size_;
                 trans_exp[r + col_offset] = std::exp(trans_acts[r+col_offset]);
-                if(c<label_lengths[mb])
-                {
-                predict_exp[r + col_offset] = std::exp(predict_acts[r+col_offset]);
-                }
               }
-          }
 
+          }
+      for(int c=0;c<label_lengths[mb]+1;c++)
+      {
+           for(int r = 0; r < alphabet_size_; ++r)
+               {
+                 int col_offset = (mb + minibatch_ * c) * alphabet_size_;
+                 predict_exp[r + col_offset] = std::exp(predict_acts[r+ col_offset]);
+               }
+      }
 }
 }
 template<typename ProbT>
@@ -115,19 +120,17 @@ CpuTransducer<ProbT>::compute_pr(const ProbT* const trans_exp,const ProbT* predi
 {
     // maxT*maxU*mini_batch_*alphabet_size_;
    ProbT sum=0;
-   int utk_index=0,trans_col_offset,predict_col_offset; 
+   int utk_index,trans_col_offset,predict_col_offset; 
    for(int mb=0;mb<minibatch_;++mb)
    {
-    utk_index+=mb*alphabet_size_;
      for(int t=0;t<input_lengths[mb];++t)
      {
-        utk_index+=t*maxU*minibatch_*alphabet_size_;
         trans_col_offset=(mb+minibatch_*t)*alphabet_size_;
-       sum=0;
-       for(int u=0;u<label_lengths[mb];++u)
+       for(int u=0;u<label_lengths[mb]+1;++u)
        {  
-           utk_index+=u*minibatch_*alphabet_size_;
+           utk_index=(mb+u*minibatch_+t*maxU*minibatch_)*alphabet_size_;
          predict_col_offset=(mb+minibatch_*u)*alphabet_size_;
+         sum=0;
          for(int r=0;r<alphabet_size_;r++)
          {
            ProbT tmp=trans_exp[trans_col_offset+r]*predict_exp[predict_col_offset+r];
@@ -169,25 +172,34 @@ transducer<ProbT>::cost_and_grad(const ProbT* const activations,
 template<typename ProbT>
 ProbT CpuTransducer<ProbT>::compute_alphas(const ProbT* const probs_tuk,ProbT * const alphas,int maxT,int maxU,int T,int U,const int* label)
 {
-    std::fill(alphas, alphas + (U+1)*T, 0);
+    std::fill(alphas, alphas + U*T, 0);
     alphas[0]=1;
     int tuk_index=0,tuk_null_index,tuk_forward_index;
     int alphabet_index=0;
+    //std::cout<<"null_label"<<null_label_;
     for(int t=0;t<T;t++)
     {   
-        alphabet_index+=t*U;
-        tuk_index+=t*maxU*minibatch_*alphabet_size_;
-        for(int u=0;u<=U;u++)
+        alphabet_index=t*U;
+        for(int u=0;u<U;u++)
         {
-            tuk_null_index=tuk_index+u*minibatch_*alphabet_size_+null_label_;
-            tuk_forward_index=tuk_index+u*minibatch_*alphabet_size_+label[u-1];
             if(t>0)
-                alphas[alphabet_index+u] += alphas[(t-1)*U+u]*probs_tuk[tuk_null_index];
+            {
+                int tuk_index_tmp=(t-1)*maxU*minibatch_*alphabet_size_;
+                tuk_null_index=tuk_index_tmp+u*minibatch_*alphabet_size_+null_label_;
+                alphas[alphabet_index+u] += alphas[(t-1)*(U)+u]*probs_tuk[tuk_null_index];
+            }
             if(u>0)
-                alphas[alphabet_index+u] += alphas[t*U+u-1]*probs_tuk[tuk_forward_index];
+               { 
+                int tuk_index_tmp=t*maxU*minibatch_*alphabet_size_;
+                tuk_forward_index=tuk_index_tmp+(u-1)*minibatch_*alphabet_size_+label[u-1];
+                alphas[alphabet_index+u] += alphas[alphabet_index+u-1]*probs_tuk[tuk_forward_index];
+              }
+             std::cout<<alphas[alphabet_index+u]<<":"<<alphabet_index+u<<" ";
         }
+        std::cout<<std::endl;
+       // std::cout<<"hello word";
     }
-    return alphas[T*U+U];
+    return alphas[(T-1)*U+(U-1)];
 } 
 /*
 template<typename ProbT>
@@ -250,7 +262,7 @@ CpuCTC<ProbT>::cost_and_grad_kernel(ProbT *grad, const ProbT* const probs,
     }
 */
 template<typename ProbT>
-transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predict_acts, const ProbT* const trans_acts,
+transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const trans_acts, const ProbT* const predict_acts,
                                          ProbT* costs,
                                          const int const * flat_labels,
                                          const int* const label_lengths,
@@ -266,7 +278,7 @@ transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predic
      //node:! trans_exp is  maxT*mini_batch_*alalphabet_size
      ProbT* trans_exp=static_cast<ProbT *>(workspace_);
      int maxT =*std::max_element(input_lengths,input_lengths+minibatch_);
-     int maxU=*std::max_element(label_lengths,label_lengths+minibatch_);
+     int maxU=*std::max_element(label_lengths,label_lengths+minibatch_)+1;
      int trans_used= minibatch_ * alphabet_size_ * maxT;
      //preddict is maxU*mini_bach_*alphabet
      ProbT* predict_exp=trans_exp+trans_used;
@@ -280,10 +292,10 @@ transducerStatus_t CpuTransducer<ProbT>::score_forward(const ProbT* const predic
      const int *label=flat_labels;
      int T=0,U=0;
      for (int mb = 0; mb < minibatch_; ++mb) {
-        const int T = input_lengths[mb]; // Length of utterance (time)
-        label+=U;
-        const int U = label_lengths[mb]; // Number of labels in transcription
           alphas+=T*U;
+          label+=U;
+         const int T = input_lengths[mb]; // Length of utterance (time)
+         const int U = label_lengths[mb]+1; // Number of labels in transcription
          costs[mb] = -compute_alphas(probs_utk + mb * alphabet_size_,alphas,maxT,maxU,T,U,label);
         }
 

@@ -40,6 +40,7 @@ transducerStatus_t compute_transducer_loss(const float* const predict_acts,const
       /*if(trans_grads!=NULL&&predict_grads!=NULL)
           return transducer.cost_and_grad();
       else*/
+//          std::cout<<"enter transducer cpu";
           return transducer.score_forward(predict_acts,trans_acts,costs,flat_labels,label_lengths,input_lengths);
     }
 }
@@ -55,19 +56,19 @@ transducerStatus_t get_workspace_size(const int* const label_lengths,
         alphabet_size <= 0 ||
         minibatch <= 0)
         return TRANSDUCER_STATUS_INVALID_VALUE;
-  int maxU=*std::max_element(label_lengths,label_lengths+minibatch);
+  int maxU=*std::max_element(label_lengths,label_lengths+minibatch)+1;
   int maxT=*std::max_element(input_lengths,input_lengths+minibatch);
   if(options.loc==TRANSDUCER_CPU)
   {
       size_t per_minibatch_bytes=0;
-      per_minibatch_bytes+=sizeof(float)*alphabet_size;
+      //per_minibatch_bytes+=sizeof(float)*alphabet_size;
       //the space for alphas
       per_minibatch_bytes+=sizeof(float)*maxU*maxT;
       //the space for betas
-      per_minibatch_bytes+=sizeof(float)*maxU;
+      //per_minibatch_bytes+=sizeof(float)*maxU;
       //the space for probs
       per_minibatch_bytes+=sizeof(float)*alphabet_size * (maxT+maxU);
-      per_minibatch_bytes+=sizeof(float)*alphabet_size*maxT*maxU;
+      per_minibatch_bytes+=sizeof(float)*alphabet_size* maxT*maxU;
       *size_bytes=per_minibatch_bytes*minibatch;
   }
   return TRANSDUCER_STATUS_SUCCESS;
