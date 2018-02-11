@@ -194,12 +194,12 @@ ProbT CpuTransducer<ProbT>::compute_alphas(const ProbT* const probs_tuk,ProbT * 
                 tuk_forward_index=tuk_index_tmp+(u-1)*minibatch_*alphabet_size_+label[u-1];
                 alphas[alphabet_index+u] += alphas[alphabet_index+u-1]*probs_tuk[tuk_forward_index];
               }
-             std::cout<<alphas[alphabet_index+u]<<":"<<alphabet_index+u<<" ";
         }
-        std::cout<<std::endl;
        // std::cout<<"hello word";
     }
-    return alphas[(T-1)*U+(U-1)];
+    tuk_null_index=(T-1)*maxU*minibatch_*alphabet_size_+(U-1)*minibatch_*alphabet_size_+null_label_;
+    ProbT loglike=alphas[(T-1)*U+(U-1)]*probs_tuk[tuk_null_index];
+    return loglike;
 } 
 /*
 template<typename ProbT>

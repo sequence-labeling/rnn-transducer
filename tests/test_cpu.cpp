@@ -13,8 +13,8 @@ std::vector<float> trans_act={0.1, 0.9, 0.1, 0.1, 0.1,
                                       0.1, 0.1, 0.9, 0.1, 0.1};
 
 std::vector<float> predict_act={0.1, 0.9, 0.1, 0.1, 0.1,
-                                       0.1, 0.5, 0.9, 0.1, 0.1,
-                                         0.5, 0.1, 0, 0.1, 0.1};
+                                       0.1, 0.1, 0.9, 0.1, 0.1,
+                                         0.9, 0.18, 0, 0.1, 0.1};
 std::vector<int> labels={1,2};
 std::vector<int> label_lengths={2};
 std::vector<int> lengths;
