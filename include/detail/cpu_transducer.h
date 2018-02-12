@@ -232,7 +232,7 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* pre
 
          for(int k_tmp=0;k_tmp<alphabet_size_;k_tmp++)
          {
-             trans_grads[trans_grads_index+k]+=grads_tuk[tuk_index+k_tmp]*probs_tuk[tuk_index+k_tmp]*(1-probs_tuk[tuk_index+k]);
+             trans_grads[trans_grads_index+k]+=grads_tuk[tuk_index+k_tmp]*probs_tuk[tuk_index+k_tmp]*(k==k_tmp?1:0-probs_tuk[tuk_index+k]);
          }
 
         }
@@ -258,16 +258,13 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* pre
 template<typename ProbT>
 std::pair<ProbT,bool> CpuTransducer<ProbT>::cost_and_grad_kernel(ProbT *grads_trans,ProbT * grads_predict, const ProbT* const trans_exp,const ProbT* predict_exp,const int* const labels,int T, int U,int alphabet_size,int minibatch,int mb, size_t bytes_used) {
     {
-
    CpuTransducer_metadata transducerm(trans_exp,predict_exp,T,U, alphabet_size,minibatch,mb,workspace_, bytes_used);
     bool over_threshold = false;
 
     if (U-1> T) {
         return std::make_pair(ProbT(0), over_threshold); // TODO, not right to return 0
     }
-
     ProbT llForward = compute_alphas(transducerm.probs_tuk,transducerm.alphas,T,U,labels);
-
     ProbT llBackward = compute_betas_and_grad(grads_trans,grads_predict, transducerm.probs_tuk,transducerm.grads_tuk,labels,T,U,transducerm.alphas,transducerm.betas);
     ProbT diff = std::abs(llForward - llBackward);
     if (diff > transducer_helper::threshold) {
@@ -305,11 +302,10 @@ transducerStatus_t CpuTransducer<ProbT>::cost_and_grad(const ProbT* const trans_
       per_minibatch_bytes += sizeof(ProbT) *  maxU * maxT*alphabet_size_;
       exp_matrix(trans_acts,predict_acts,trans_exp,predict_exp,input_lengths,label_lengths);
 
-#pragma omp parallel for
+   #pragma omp parallel for
     for (int mb = 0; mb < minibatch_; ++mb) {
         const int T = input_lengths[mb]; // Length of utterance (time)
-        const int U = label_lengths[mb]; // Number of labels in transcription
-
+        const int U = label_lengths[mb]+1; // Number of labels in transcription
         bool mb_status;
 
         std::tie(costs[mb], mb_status) =cost_and_grad_kernel(grads_trans,grads_predict,trans_exp,predict_exp,

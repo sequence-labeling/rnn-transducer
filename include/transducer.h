@@ -31,7 +31,7 @@ TRANSDUCER_GPU=1
  };
 const char* transducerGetStatusString(transducerStatus_t status);
 int get_transducer_version();
-transducerStatus_t compute_transducer_loss(const float * const trans_act,const float * const predict_act,float * trans_grad,float * predict_grad,const int * const flat_labels,const int * const label_lengths,const int * const input_lengths,int alphabet_size,int minibatch, float * costs, void * workspace ,transducerOptions options);
+transducerStatus_t compute_transducer_loss(const float * const trans_act,const float * const predict_act,float * trans_grad,float * predict_grad,const int * const flat_labels,const int * const input_lengths,const int * const label_lengths,int alphabet_size,int minibatch, float * costs, void * workspace ,transducerOptions options);
 transducerStatus_t get_workspace_size(const int* const label_lengths,
                                const int* const input_lengths,
                                int alphabet_size, int minibatch,
