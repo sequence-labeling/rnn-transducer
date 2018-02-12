@@ -11,7 +11,10 @@ project(transducer_release)
 IF (NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2")
 ENDIF()
-
+IF (APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2")
+    add_definitions(-DAPPLE)
+ENDIF()
 include_directories(include)
 
 option(WITH_OMP "compile transducer with openmp. " OFF)
