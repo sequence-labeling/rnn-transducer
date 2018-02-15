@@ -187,8 +187,9 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* pre
     std::fill(trans_grads, trans_grads + T*alphabet_size_, 0);
     std::fill(predict_grads, predict_grads + U*alphabet_size_, 0);
     int tuk_null_index=(T-1)*U*alphabet_size_+(U-1)*alphabet_size_+null_label_;
+    std::fill(betas,betas+U,probs_tuk[tuk_null_index]);
     ProbT pr_yx=alphas[(T-1)*U+(U-1)]*probs_tuk[tuk_null_index];
-    ProbT beta_tu=probs_tuk[tuk_null_index],beta_tu_,beta_t_u;
+    ProbT beta_tu=probs_tuk[tuk_null_index],beta_tu_=probs_tuk[tuk_null_index],beta_t_u=probs_tuk[tuk_null_index];
     for(int t=T-1;t>=0;t--)
      {
          int alphas_index=t*U;
@@ -197,21 +198,30 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* pre
              beta_tu_=beta_tu;
              beta_t_u=betas[u];
              int tu_index=t*U*alphabet_size_+u*alphabet_size_;
-             if(T<T-1)
+             beta_tu=0;
+             if(t<T-1)
+             {
                  beta_tu+=beta_t_u*probs_tuk[tu_index+null_label_];
-             if(U<U-1)
+             }
+              if(u<U-1)
+             {
                  beta_tu+=beta_tu_*probs_tuk[tu_index+label[u]];
+             }
+             if(t==T-1&&u==U-1)
+             {
+                 beta_tu=probs_tuk[tuk_null_index];
+             }
               betas[u]=beta_tu;
              int grads_tuk_index=(u+t*U)*alphabet_size_;
              for(int k=0;k<alphabet_size_;k++)
               {  
                   if(k==null_label_)
                   {
-                      grads_tuk[grads_tuk_index+k]=-(alphas[alphas_index]/pr_yx)*beta_t_u;
+                      grads_tuk[grads_tuk_index+k]=-(alphas[alphas_index+u]/pr_yx)*beta_t_u;
                   }
                   else if(k==label[u])
                   { 
-                      grads_tuk[grads_tuk_index+k]=-(alphas[alphas_index]/pr_yx)*beta_tu_;
+                      grads_tuk[grads_tuk_index+k]=-(alphas[alphas_index+u]/pr_yx)*beta_tu_;
                  
                   }
                   else
@@ -253,7 +263,7 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* pre
        }
       }
     }
-   return pr_yx;
+   return beta_tu;
 }
 template<typename ProbT>
 std::pair<ProbT,bool> CpuTransducer<ProbT>::cost_and_grad_kernel(ProbT *grads_trans,ProbT * grads_predict, const ProbT* const trans_exp,const ProbT* predict_exp,const int* const labels,int T, int U,int alphabet_size,int minibatch,int mb, size_t bytes_used) {
