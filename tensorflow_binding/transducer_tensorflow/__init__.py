@@ -4,9 +4,9 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops.nn_grad import _BroadcastMul
 
 lib_file = imp.find_module('kernels', __path__)[1]
-_warpctc = tf.load_op_library(lib_file)
+_transducer = tf.load_op_library(lib_file)
 
-def transducer_loss(trans_acts,predict_acts,label_lengths, input_lengths):
+def transducer_loss(trans_acts,predict_acts,labels, input_lengths):
     '''Computes the CTC loss between a sequence of activations and a
     ground truth labeling.
 
@@ -19,10 +19,6 @@ def transducer_loss(trans_acts,predict_acts,label_lengths, input_lengths):
 
         flat_labels: A 1-D Tensor of ints, a concatenation of all the
                      labels for the minibatch.
-
-        label_lengths: A 1-D Tensor of ints, the length of each label
-                       for each example in the minibatch.
-
         input_lengths: A 1-D Tensor of ints, the number of time steps
                        for each sequence in the minibatch.
 
@@ -38,19 +34,21 @@ def transducer_loss(trans_acts,predict_acts,label_lengths, input_lengths):
     * The label reserved for the blank symbol should be label 0.
 
     '''
-    loss, _ = _transducer._transducer_loss(activations, flat_labels, label_lengths,
-                                input_lengths, blank_label)
+    if not isinstance(labels, sparse_tensor.SparseTensor):
+       raise TypeError("Expected labels (first argument) to be a SparseTensor")
+    loss, _ = _transducer._transducer_loss(trans_acts,predict_acts,labels.indices,labels.values,input_lengths, flat_labels, label_lengths)
     return loss
 
 
-@ops.RegisterGradient("WarpCTC")
-def _CTCLossGrad(op, grad_loss, _):
-    grad = op.outputs[1]
-    return [_BroadcastMul(grad_loss, grad), None, None, None]
+@ops.RegisterGradient("TransducerLoss")
+def _TransducerLossGrad(op, grad_losses, _):
+    trans_grads = op.outputs[1]
+    prdict_grads= op.outputs[2]
+    return [_BroadcastMul(grad_losses[0], trans_grads), _BroadcastMul(grad_losses[1], predict_grads), None, None]
 
 
-@ops.RegisterShape("WarpCTC")
-def _CTCLossShape(op):
+@ops.RegisterShape("TransducerLoss")
+def _TransducerLossShape(op):
     inputs_shape = op.inputs[0].get_shape().with_rank(3)
     batch_size = inputs_shape[1]
     return [batch_size, inputs_shape]

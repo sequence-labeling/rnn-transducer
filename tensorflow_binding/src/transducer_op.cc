@@ -11,7 +11,8 @@
 REGISTER_OP("transducer")
     .Input("trans_acts: float32")
     .Input("predict_acts: float32")
-    .Input("flat_labels: int32")
+    .Input("labels_indices: int64")
+    .Input("labels_values: int32")
     .Input("input_lengths: int32")
     .Output("costs: float32")
     .Output("trans_grads: float32")
@@ -31,12 +32,10 @@ class TransducerLossOpBase : public tf::OpKernel {
         const tf::Tensor* labels_indices;
         const tf::Tensor* labels_values;
         const tf::Tensor* input_lens;
-        const tf::Tensor* label_lens;
         OP_REQUIRES_OK(ctx, ctx->input("trans_acts", &trans_inputs));
         OP_REQUIRES_OK(ctx,ctx->input("predict_acts",&predict_inputs));
         OP_REQUIRES_OK(ctx, ctx->input("labels_indices", &labels_indices));
         OP_REQUIRES_OK(ctx, ctx->input("labels_values", &labels_values));
-        OP_REQUIRES_OK(ctx, ctx->input("label_lengths", &label_lens));
         OP_REQUIRES_OK(ctx, ctx->input("input_lengths", &input_lens));
         OP_REQUIRES(ctx, trans_inputs->shape().dims() == 3,
                     tf::errors::InvalidArgument("transcription network inputs is not a 3-Tensor"));
