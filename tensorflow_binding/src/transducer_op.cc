@@ -30,9 +30,23 @@ class TransducerOpBase:public tf::OpKernel
         const tf::Tensor * trans_acts;
         const tf::Tensor * predict_act;
         const tf::Tensor * input_lengths;
-        const tf::Tensor * label_lengths;
-        cons
+        const tf::Tensor * labels_lengths;
+        const tf::Tensor * labels_value;
+        OP_
+        transducer_status=compute_transducer_loss(trans_acts.data(),predict_acts.data(),
+                grads_trans.data(),grads_predict.data(),input_length.data(),
+                label_length.data(),num_classes,batch_szie,loss_t.data,workspace.data(),
+                options);
+        OP_REQUIRES(transducer,transucer_status==TRANSDUCER_STATUS_SUCCESS<
+                tf::errors::Internal("transducer error in compute_transducer:",
+                    tansducerGetStatusString(transducer_status)));
+    
         
         }
-
+            private:
+        void set_zero(tf::Tensor* t) override
+        {
+            t->flat<float>().setZero();
+        }
+        transducerOptions create_options()
 }
