@@ -43,8 +43,8 @@ transducerStatus_t compute_transducer_loss(const float* const trans_acts,const f
       return transducer.score_forward(trans_acts,predict_acts,costs,flat_labels,input_lengths,label_lengths);
     }
 }
-transducerStatus_t get_workspace_size(const int* const label_lengths,
-                               const int* const input_lengths,
+transducerStatus_t get_workspace_size(const int* const input_lengths,
+                               const int* const label_lengths,
                                int alphabet_size, int minibatch,
                                transducerOptions options,
                                size_t* size_bytes)

@@ -25,7 +25,7 @@ transducerOptions options{};
 options.loc=TRANSDUCER_CPU;
 options.num_threads=1;
 size_t cpu_alloc_bytes;
- throw_on_error(get_workspace_size(label_lengths.data(), lengths.data(),alphabet_size, lengths.size(), options,&cpu_alloc_bytes),"Error: get_workspace_size in small_test");
+ throw_on_error(get_workspace_size(lengths.data(), label_lengths.data(),alphabet_size, lengths.size(), options,&cpu_alloc_bytes),"Error: get_workspace_size in small_test");
     std::cout<<cpu_alloc_bytes<<std::endl;
 
  void* transducer_cpu_workspace = malloc(cpu_alloc_bytes);
@@ -69,7 +69,7 @@ bool options_test()
  std::vector<float> grads_trans(alphabet_size* 2);
  std::vector<float> grads_predict(alphabet_size* 3);
 
-   throw_on_error(get_workspace_size(label_lengths.data(), lengths.data(),alphabet_size, lengths.size(), options,&cpu_alloc_bytes),"Error: get_workspace_size in small_test");
+   throw_on_error(get_workspace_size(lengths.data(), label_lengths.data(),alphabet_size, lengths.size(), options,&cpu_alloc_bytes),"Error: get_workspace_size in small_test");
   void* transducer_cpu_workspace = malloc(cpu_alloc_bytes);
  throw_on_error(compute_transducer_loss(trans_act.data(),predict_act.data(),grads_trans.data(),grads_predict.data(),labels.data(), lengths.data(),
                                      label_lengths.data(),

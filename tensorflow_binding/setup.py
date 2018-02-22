@@ -91,7 +91,7 @@ ext = setuptools.Extension('transducer_tensorflow.kernels',
                            include_dirs = include_dirs,
                            library_dirs = [warp_ctc_path],
                            runtime_library_dirs = [os.path.realpath(warp_ctc_path)],
-                           libraries = ['warpctc'],
+                           libraries = ['transducer'],
                            extra_compile_args = extra_compile_args)
 
 class build_tf_ext(orig_build_ext):
@@ -116,9 +116,8 @@ setuptools.setup(
     version = "0.1",
     description = "TensorFlow wrapper for rnn-transducer",
     long_description = LONG_DESCRIPTION,
-    url = "https://github.com/baidu-research/warp-ctc",
     author = "dumiao",
-    author_email = "https://github.com/sequence-labeling/rnn-transducer",
+    url = "https://github.com/sequence-labeling/rnn-transducer",
     license = "Apache",
     packages = ["transducer_tensorflow"],
     ext_modules = [ext],
