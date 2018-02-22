@@ -7,7 +7,7 @@
 #include "tensorflow/core/kernels/bounds_check.h"
 #include "tensorflow/core/util/sparse/sparse_tensor.h"
 
-#include "ctc.h"
+#include "transducer.h"
 REGISTER_OP("transducer")
     .Input("trans_acts: float32")
     .Input("predict_acts: float32")
@@ -18,11 +18,11 @@ REGISTER_OP("transducer")
     .Output("predict_grads :float32");
 namespace tf = tensorflow;
 
-namespace warp_ctc {
+namespace transducer_transducer {
 
 class TransducerLossOpBase : public tf::OpKernel {
   public:
-    explicit CTCLossOpBase(tf::OpKernelConstruction* ctx) : tf::OpKernel(ctx) {
+    explicit TransducerLossOpBase(tf::OpKernelConstruction* ctx) : tf::OpKernel(ctx) {
     }
 
     void Compute(tf::OpKernelContext* ctx) override {
@@ -60,7 +60,7 @@ class TransducerLossOpBase : public tf::OpKernel {
         const auto num_classes = static_cast<const int>(num_classes_raw);
 
         OP_REQUIRES(
-                ctx, batch_size == seq_len->dim_size(0),
+                ctx, batch_size == input_lens->dim_size(0),
                 tf::errors::InvalidArgument("len(sequence_length) != batch_size.  ",
                                             "len(sequence_length):  ", input_lens->dim_size(0),
                                             " batch_size: ", batch_size));
@@ -104,12 +104,12 @@ class TransducerLossOpBase : public tf::OpKernel {
 
         for (int b = 0; b < batch_size; ++b) {
             OP_REQUIRES(
-                    ctx, seq_len_t(b) <= max_time,
+                    ctx, input_lens_t(b) <= max_time,
                     tf::errors::InvalidArgument("sequence_length(", b, ") <= ", max_time));
         }
 
         tf::Tensor* loss = nullptr;
-        OP_REQUIRES_OK(ctx, ctx->allocate_output("loss", seq_len->shape(), &loss));
+        OP_REQUIRES_OK(ctx, ctx->allocate_output("loss", input_lens->shape(), &loss));
         auto loss_t = loss->vec<float>();
 
         tf::Tensor* trans_grads;
@@ -119,7 +119,7 @@ class TransducerLossOpBase : public tf::OpKernel {
         OP_REQUIRES_OK(ctx,
                        ctx->allocate_output("predict_grads", predict_shape, &predict_grads));
         set_zero(trans_grads);
-        set_zero(predict_grad);
+        set_zero(predict_grads);
         auto trans_gradient_t = trans_grads->tensor<float, 3>();
         auto predict_gradient_t=predict_grads->tensor<float,3>();
 
@@ -145,9 +145,8 @@ class TransducerLossOpBase : public tf::OpKernel {
                                        trans_gradient_t.data(),
                                        predict_gradient_t.data(),
                                        label_values_t.data(),
-                                       input_lens_t.data();
+                                       input_lens_t.data(),
                                        label_lengths.data(),
-                                       seq_len_t.data(),
                                        num_classes, batch_size,
                                        loss_t.data(), workspace_t.data(), options);
         
@@ -159,7 +158,7 @@ class TransducerLossOpBase : public tf::OpKernel {
 
   private:
     virtual void set_zero(tf::Tensor* t) = 0;
-    virtual ctcOptions create_options(tf::OpKernelContext* ctx) = 0;
+    virtual transducerOptions create_options(tf::OpKernelContext* ctx) = 0;
 };
 
 class TransducerLossOpCPU : public TransducerLossOpBase {
@@ -180,51 +179,5 @@ class TransducerLossOpCPU : public TransducerLossOpBase {
     }
 };
 
-REGISTER_KERNEL_BUILDER(Name("TransducerLoss")
-                        .Device(::tensorflow::DEVICE_CPU)
-                        .Label("WarpCTC"),
-                        CTCLossOpCPU);
-/***
- the gpu has not implennt
-#ifdef WARPCTC_ENABLE_GPU
-
-class CTCLossOpGPU : public CTCLossOpBase {
-  public:
-    explicit CTCLossOpGPU(tf::OpKernelConstruction* ctx) : CTCLossOpBase(ctx) {
-    }
-
-  private:
-    void set_zero(tf::Tensor* t) override {
-        cudaMemset(t->flat<float>().data(), 0, t->NumElements()*sizeof(float));
-    }
-
-    ctcOptions create_options(tf::OpKernelContext* ctx) override {
-        auto cuda_stream = ctx->eigen_device<Eigen::GpuDevice>().stream();
-        auto options = ctcOptions{};
-        options.loc = CTC_GPU;
-        options.stream = cuda_stream;
-        return options;
-    }
-};
-
-// Register GPU kernel both with and without the label
-REGISTER_KERNEL_BUILDER(Name("CTCLoss")
-                        .Device(::tensorflow::DEVICE_GPU)
-                        .Label("WarpCTC")
-                        .HostMemory("labels_indices")
-                        .HostMemory("labels_values")
-                        .HostMemory("sequence_length")
-                        .HostMemory("loss"),
-                        CTCLossOpGPU);
-REGISTER_KERNEL_BUILDER(Name("CTCLoss")
-                        .Device(::tensorflow::DEVICE_GPU)
-                        .HostMemory("labels_indices")
-                        .HostMemory("labels_values")
-                        .HostMemory("sequence_length")
-                        .HostMemory("loss"),
-                        CTCLossOpGPU);
-
-#undef EIGEN_USE_GPU
-#endif
-
-}**//
+REGISTER_KERNEL_BUILDER(Name("TransducerLoss").Device(::tensorflow::DEVICE_CPU).Label("transducer"),TransducerLossOpCPU);
+}

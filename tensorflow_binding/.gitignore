@@ -1,0 +1,4 @@
+*.pyc
+dist
+build
+rnn_transucer_tensorflow.egg-info

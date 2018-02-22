@@ -16,15 +16,12 @@ try:
 except ImportError:
     raise RuntimeError("Tensorflow must be installed to build the tensorflow wrapper.")
 
-if "CUDA_HOME" not in os.environ:
-    print("CUDA_HOME not found in the environment so building "
-          "without GPU support. To build with GPU support "
-          "please define the CUDA_HOME environment variable. "
-          "This should be a path which contains include/cuda.h",
+if "CUDA_HOME"  in os.environ:
+    print("CUDA_HOME is found in the environment,but we have not implement a gpu version",
           file=sys.stderr)
-    enable_gpu = False
-else:
-    enable_gpu = True
+#    enable_gpu = False
+#else:
+ #   enable_gpu = True
 
 
 if "TENSORFLOW_SRC_PATH" not in os.environ:
@@ -41,10 +38,11 @@ else:
 rnn_transducer_path = "../build"
 if "RNN_TRANSDUCER_PATH" in os.environ:
     rnn_transducer_path = os.environ["RNN_TRANSDUCER_PATH"]
-if not os.path.exists(os.path.join(warp_ctc_path, "libtrasducer"+lib_ext)):
+print(os.path.join(rnn_transducer_path, "libtrasducer"+lib_ext))
+if not os.path.exists(os.path.join(rnn_transducer_path, "libtransducer"+lib_ext)):
     print(("Could not find libtransducer.so in {}.\n"
            "Build rnn-transducer and set RNN_TRANSDUCER_PATH to the location of"
-           " libtransducer.so (default is '../build')").format(warp_ctc_path),
+           " libtransducer.so (default is '../build')").format(rnn_transducer_path),
           file=sys.stderr)
     sys.exit(1)
 
@@ -83,14 +81,14 @@ for loc in include_dirs:
               file=sys.stderr)
         sys.exit(1)
 
-lib_srcs = ['src/transducer_op_kernel.cc', 'src/tranducer_op.cc']
+lib_srcs =['src/transducer_op.cc']
 
 ext = setuptools.Extension('transducer_tensorflow.kernels',
                            sources = lib_srcs,
                            language = 'c++',
                            include_dirs = include_dirs,
-                           library_dirs = [warp_ctc_path],
-                           runtime_library_dirs = [os.path.realpath(warp_ctc_path)],
+                           library_dirs = [rnn_transducer_path],
+                           runtime_library_dirs = [os.path.realpath(rnn_transducer_path)],
                            libraries = ['transducer'],
                            extra_compile_args = extra_compile_args)
 
