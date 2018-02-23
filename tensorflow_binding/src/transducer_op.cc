@@ -8,7 +8,7 @@
 #include "tensorflow/core/util/sparse/sparse_tensor.h"
 
 #include "transducer.h"
-REGISTER_OP("transducer")
+REGISTER_OP("RnnTransducer")
     .Input("trans_acts: float32")
     .Input("predict_acts: float32")
     .Input("labels_indices: int64")
@@ -19,7 +19,7 @@ REGISTER_OP("transducer")
     .Output("predict_grads :float32");
 namespace tf = tensorflow;
 
-namespace transducer_transducer {
+namespace rnn_transducer {
 
 class TransducerLossOpBase : public tf::OpKernel {
   public:
@@ -178,5 +178,5 @@ class TransducerLossOpCPU : public TransducerLossOpBase {
     }
 };
 
-REGISTER_KERNEL_BUILDER(Name("TransducerLoss").Device(::tensorflow::DEVICE_CPU).Label("transducer"),TransducerLossOpCPU);
+REGISTER_KERNEL_BUILDER(Name("RnnTransducer").Device(::tensorflow::DEVICE_CPU).Label("transducer"),TransducerLossOpCPU);
 }

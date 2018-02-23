@@ -36,18 +36,18 @@ def transducer_loss(trans_acts,predict_acts,labels, input_lengths):
     '''
     if not isinstance(labels, sparse_tensor.SparseTensor):
        raise TypeError("Expected labels (first argument) to be a SparseTensor")
-    loss, _ = _transducer._transducer_loss(trans_acts,predict_acts,labels.indices,labels.values,input_lengths, flat_labels, label_lengths)
+    loss, _ = _transducer._rnn_transducer(trans_acts,predict_acts,labels.indices,labels.values,input_lengths, flat_labels, label_lengths)
     return loss
 
 
-@ops.RegisterGradient("TransducerLoss")
+@ops.RegisterGradient("RnnTransducer")
 def _TransducerLossGrad(op, grad_losses, _):
     trans_grads = op.outputs[1]
     prdict_grads= op.outputs[2]
     return [_BroadcastMul(grad_losses[0], trans_grads), _BroadcastMul(grad_losses[1], predict_grads), None, None]
 
 
-@ops.RegisterShape("TransducerLoss")
+@ops.RegisterShape("RnnTransducer")
 def _TransducerLossShape(op):
     inputs_shape = op.inputs[0].get_shape().with_rank(3)
     batch_size = inputs_shape[1]
