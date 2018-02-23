@@ -188,8 +188,6 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* pre
     int tuk_null_index=(T-1)*U*alphabet_size_+(U-1)*alphabet_size_+null_label_;
     std::fill(betas,betas+U,probs_tuk[tuk_null_index]);
     ProbT pr_yx=alphas[(T-1)*U+(U-1)]*probs_tuk[tuk_null_index];
-    std::cout<<"pr_yx"<<std::endl;
-    std::cout<<pr_yx;
     ProbT beta_tu=probs_tuk[tuk_null_index],beta_tu_=probs_tuk[tuk_null_index],beta_t_u=probs_tuk[tuk_null_index];
     for(int t=T-1;t>=0;t--)
      {

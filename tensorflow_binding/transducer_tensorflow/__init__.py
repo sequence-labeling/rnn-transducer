@@ -13,25 +13,21 @@ def transducer_loss(trans_acts,predict_acts,labels, input_lengths):
 
     Args:
 
-        activations: A 3-D Tensor of floats.  The dimensions
-                     should be (t, n, a), where t is the time index, n
-                     is the minibatch index, and a indexes over
-                     activations for each symbol in the alphabet.
 
-        flat_labels: A 1-D Tensor of ints, a concatenation of all the
-                     labels for the minibatch.
-        input_lengths: A 1-D Tensor of ints, the number of time steps
-                       for each sequence in the minibatch.
-
+        trans_acts:3-D `float` `Tensor`.
+              The transcription network output. shape must be [max_time,batch_size,num_classes,]
+        predict_acts:3-D `float` `Tensor`.
+              The predict network output.shape must be [max_label_lengths,batch_size,num_classes]
+        labels: An `int32` `SparseTensor`.
+             `labels.indices[i, :] == [b, t]` means `labels.values[i]` stores
+              the id for (batch b, time t).
+              `labels.values[i]` must take on values in `[0, num_labels)`.
+              See `core/ops/ctc_ops.cc` for more details.
+        input_lens: 1-D `int32` vector, size `[batch_size]`.
+              The transcription network ouput lengths.
 
     Returns:
         1-D float Tensor, the cost of each example in the minibatch
-        (as negative log probabilities).
-
-    * This class performs the softmax operation internally.
-
-    * The label reserved for the blank symbol should be label 0.
-
     '''
     if not isinstance(labels, sparse_tensor.SparseTensor):
        raise TypeError("Expected labels (first argument) to be a SparseTensor")
