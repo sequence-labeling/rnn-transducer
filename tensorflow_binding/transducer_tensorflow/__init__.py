@@ -1,5 +1,6 @@
 import imp
 import tensorflow as tf
+from tensorflow.python.framework import sparse_tensor
 from tensorflow.python.framework import ops
 from tensorflow.python.ops.nn_grad import _BroadcastMul
 
@@ -36,7 +37,7 @@ def transducer_loss(trans_acts,predict_acts,labels, input_lengths):
     '''
     if not isinstance(labels, sparse_tensor.SparseTensor):
        raise TypeError("Expected labels (first argument) to be a SparseTensor")
-    loss, _ = _transducer._rnn_transducer(trans_acts,predict_acts,labels.indices,labels.values,input_lengths, flat_labels, label_lengths)
+    loss, _,_ = _transducer.rnn_transducer(trans_acts,predict_acts,labels.indices,labels.values,input_lengths)
     return loss
 
 
@@ -49,7 +50,8 @@ def _TransducerLossGrad(op, grad_losses, _):
 
 @ops.RegisterShape("RnnTransducer")
 def _TransducerLossShape(op):
-    inputs_shape = op.inputs[0].get_shape().with_rank(3)
-    batch_size = inputs_shape[1]
-    return [batch_size, inputs_shape]
+    trans_inputs_shape = op.inputs[0].get_shape().with_rank(3)
+    predict_inputs_shape= op.inputs[1].get_shape().with_rank(3)
+    batch_size = trans_inputs_shape[1]
+    return [batch_size, trans_inputs_shape,predict_inputs_shape]
 

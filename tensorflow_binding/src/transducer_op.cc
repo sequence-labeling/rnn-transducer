@@ -51,6 +51,7 @@ class TransducerLossOpBase : public tf::OpKernel {
         const auto& trans_shape = trans_inputs->shape();
         const auto& predict_shape=predict_inputs->shape();
         const auto max_time = trans_shape.dim_size(0);
+        const auto max_u=trans_shape.dim_size(0);
         const auto batch_size = trans_shape.dim_size(1);
         const auto num_classes_raw = trans_shape.dim_size(2);
         OP_REQUIRES(
@@ -63,6 +64,12 @@ class TransducerLossOpBase : public tf::OpKernel {
                 tf::errors::InvalidArgument("len(sequence_length) != batch_size.  ",
                                             "len(sequence_length):  ", input_lens->dim_size(0),
                                             " batch_size: ", batch_size));
+        OP_REQUIRES(
+                ctx, batch_size == predict_shape.dim_size(1),
+                tf::errors::InvalidArgument("predict batch_size  != trans batch size batch_size.  ",
+                                            "predict batch_size: ", predict_shape.dim_size(1),
+                                            " batch_size: ", batch_size));
+
         auto input_lens_t = input_lens->vec<int32_t>();
 
         OP_REQUIRES(ctx, labels_indices->dim_size(0) == labels_values->dim_size(0),
