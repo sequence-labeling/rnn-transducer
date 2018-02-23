@@ -115,7 +115,7 @@ class TransducerLossOpBase : public tf::OpKernel {
         }
 
         tf::Tensor* loss = nullptr;
-        OP_REQUIRES_OK(ctx, ctx->allocate_output("loss", input_lens->shape(), &loss));
+        OP_REQUIRES_OK(ctx, ctx->allocate_output("costs", input_lens->shape(), &loss));
         auto loss_t = loss->vec<float>();
 
         tf::Tensor* trans_grads;
@@ -185,5 +185,5 @@ class TransducerLossOpCPU : public TransducerLossOpBase {
     }
 };
 
-REGISTER_KERNEL_BUILDER(Name("RnnTransducer").Device(::tensorflow::DEVICE_CPU).Label("transducer"),TransducerLossOpCPU);
+REGISTER_KERNEL_BUILDER(Name("RnnTransducer").Device(::tensorflow::DEVICE_CPU),TransducerLossOpCPU);
 }

@@ -23,8 +23,6 @@ def transducer_loss(trans_acts,predict_acts,labels, input_lengths):
         input_lengths: A 1-D Tensor of ints, the number of time steps
                        for each sequence in the minibatch.
 
-        blank_label: int, the label value/index that the CTC
-                     calculation should use as the blank label
 
     Returns:
         1-D float Tensor, the cost of each example in the minibatch
@@ -42,10 +40,10 @@ def transducer_loss(trans_acts,predict_acts,labels, input_lengths):
 
 
 @ops.RegisterGradient("RnnTransducer")
-def _TransducerLossGrad(op, grad_losses, _):
+def _TransducerLossGrad(op, grad_loss,grad1,grad2):
     trans_grads = op.outputs[1]
-    prdict_grads= op.outputs[2]
-    return [_BroadcastMul(grad_losses[0], trans_grads), _BroadcastMul(grad_losses[1], predict_grads), None, None]
+    predict_grads= op.outputs[2]
+    return [_BroadcastMul(grad_loss, trans_grads), _BroadcastMul(grad_loss, predict_grads),None,None, None]
 
 
 @ops.RegisterShape("RnnTransducer")
