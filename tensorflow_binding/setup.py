@@ -11,6 +11,7 @@ import unittest
 from setuptools.command.build_ext import build_ext as orig_build_ext
 
 # We need to import tensorflow to find where its include directory is.
+from distutils.version import LooseVersion
 try:
     import tensorflow as tf
 except ImportError:
@@ -53,10 +54,17 @@ tf_src_dir = os.environ["TENSORFLOW_SRC_PATH"]
 tf_includes = [tf_include, tf_src_dir]
 rnn_transducer_includes = [os.path.join(root_path, '../include')]
 include_dirs = tf_includes + rnn_transducer_includes
-
+library_dirs =[rnn_transducer_path]
+libraries = ['transducer']
 extra_compile_args = ['-std=c++11', '-fPIC']
 # current tensorflow code triggers return type errors, silence those for now
 extra_compile_args += ['-Wno-return-type']
+if LooseVersion(tf.__version__)>=LooseVersion("1.4.0"):
+   include_dirs+=[tf_include+"//external/nsync/public"]
+   library_dirs+=[tf.sysconfig.get_lib()]
+   libraries+=["tensorflow_framework"]   
+   extra_compile_args += [ '-D_GLIBCXX_USE_CXX11_ABI=0']
+   print("tensorflow version >= 1.4.0")     
 """
 if (enable_gpu):
     extra_compile_args += ['-DWARPCTC_ENABLE_GPU']
@@ -87,9 +95,9 @@ ext = setuptools.Extension('transducer_tensorflow.kernels',
                            sources = lib_srcs,
                            language = 'c++',
                            include_dirs = include_dirs,
-                           library_dirs = [rnn_transducer_path],
+                           library_dirs =library_dirs,
                            runtime_library_dirs = [os.path.realpath(rnn_transducer_path)],
-                           libraries = ['transducer'],
+                           libraries = libraries,
                            extra_compile_args = extra_compile_args)
 
 class build_tf_ext(orig_build_ext):
