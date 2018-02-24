@@ -27,7 +27,6 @@ options.num_threads=1;
 options.null_label=4;
 size_t cpu_alloc_bytes;
  throw_on_error(get_workspace_size(lengths.data(), label_lengths.data(),alphabet_size, lengths.size(), options,&cpu_alloc_bytes),"Error: get_workspace_size in small_test");
-    std::cout<<cpu_alloc_bytes<<std::endl;
 
  void* transducer_cpu_workspace = malloc(cpu_alloc_bytes);
 throw_on_error(compute_transducer_loss(trans_act.data(),predict_act.data(), NULL,NULL,labels.data(), lengths.data(),
@@ -90,6 +89,7 @@ bool options_test()
  std::cout<<std::endl;
  for (auto i = grads_predict.begin(); i != grads_predict.end(); ++i)
     std::cout << *i << ' ';
+ std::cout<<std::endl;
  const float eps=1e-6;
  const float lb = expected_score - eps;
  const float ub = expected_score + eps;
