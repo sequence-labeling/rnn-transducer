@@ -127,31 +127,6 @@ CpuTransducer<ProbT>::exp_matrix(const ProbT* const trans_acts,const ProbT*  con
       }
   }
 }
-/*
-template<typename ProbT>
-CpuTransducer<ProbT>::cost_and_grad(const ProbT* const activations,
-                             ProbT *grads,
-                             ProbT *costs,
-                             const int* const flat_labels,
-                             const int* const label_lengths,
-                             const int* const input_lengths
-)
-{
-//if (activations == nullptr ||
-  //      grads == nullptr ||
-    //    costs == nullptr ||
-      //  flat_labels == nullptr ||
-        //label_lengths == nullptr ||
-        //input_lengths == nullptr
-       // )
-        return TRANSDUCER_STATUS_INVALID_VALUE;
-//todo
-}
-*/
-//t,u   u*T+t
-//u: [0,U]
-//t: [0,T)
-//must invoke compute_pr before invoke this function
 template<typename ProbT>
 ProbT CpuTransducer<ProbT>::compute_alphas(const ProbT* const probs_tuk,ProbT * const alphas,int T,int U,const int* label)
 {
@@ -179,7 +154,7 @@ ProbT CpuTransducer<ProbT>::compute_alphas(const ProbT* const probs_tuk,ProbT * 
     }
     tuk_null_index=(T-1)*U*alphabet_size_+(U-1)*alphabet_size_+null_label_;
     ProbT loglike=alphas[(T-1)*U+(U-1)]*probs_tuk[tuk_null_index];
-    return loglike;
+    return std::log(loglike);
 } 
 template<typename ProbT>
 ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* predict_grads, const ProbT* const probs_tuk,ProbT* const grads_tuk,const int * const label,int T, int U,ProbT* alphas,ProbT* betas) {
@@ -262,7 +237,7 @@ ProbT CpuTransducer<ProbT>::compute_betas_and_grad(ProbT* trans_grads,ProbT* pre
        }
       }
     }
-   return beta_tu;
+   return std::log(beta_tu);
 }
 template<typename ProbT>
 std::pair<ProbT,bool> CpuTransducer<ProbT>::cost_and_grad_kernel(ProbT *grads_trans,ProbT * grads_predict, const ProbT* const trans_exp,const ProbT* predict_exp,const int* const labels,int T, int U,int alphabet_size,int minibatch,int mb, size_t bytes_used) {
