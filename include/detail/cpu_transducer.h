@@ -255,7 +255,7 @@ std::pair<ProbT,bool> CpuTransducer<ProbT>::cost_and_grad_kernel(ProbT *grads_tr
         over_threshold = true;
     }
 
-    return std::make_pair(llBackward,over_threshold);
+    return std::make_pair(-llBackward,over_threshold);
     }
 }
 
